@@ -1,0 +1,94 @@
+
+Desafio Prático de Segurança Cibernética: Força Bruta com Medusa e Kali Linux
+
+Este projeto simula e documenta cenários de ataque de força bruta utilizando o framework de testes de penetração **Kali Linux** e a ferramenta **Medusa**, contra ambientes vulneráveis controlados (Metasploitable 2 e DVWA).
+
+O objetivo é demonstrar a compreensão de vulnerabilidades comuns, a proficiência no uso de ferramentas de auditoria e a capacidade de propor medidas de mitigação.
+
+---
+
+## 1. Configuração do Ambiente de Testes
+
+O laboratório foi configurado em um ambiente de máquinas virtuais isolado para garantir a segurança e o controle dos testes.
+
+| Componente | Função | Configuração de Rede | Endereço IP (Exemplo) |
+| :--- | :--- | :--- | :--- |
+| **Atacante (VM)** | Kali Linux 2024.x | Rede Interna (Host-Only) | [COLE AQUI O IP DO KALI] |
+| **Alvo (VM)** | Metasploitable 2 | Rede Interna (Host-Only) | **[COLE AQUI O IP DO METASPLOITABLE]** |
+| **Hypervisor** | Oracle VirtualBox | - | - |
+
+### 1.1. Conectividade e Preparação
+
+A comunicação entre as VMs foi validada através do comando `ping` no terminal do Kali Linux.
+
+```bash
+ping [COLE AQUI O IP DO METASPLOITABLE]
+1.2. Wordlists Utilizadas
+As wordlists foram criadas para simular credenciais fracas e comuns, conforme detalhado na pasta /wordlists.
+
+senhas_fracas.txt: Lista de senhas simples (ex: 123456, password, msfadmin).
+
+usuarios_comuns.txt: Lista de usuários padrões e comuns em ambientes de testes (ex: msfadmin, ftpuser, postgres).
+
+2. Cenários de Ataque e Execução
+Os testes foram divididos em três cenários principais para cobrir diferentes protocolos e vetores de ataque.
+
+2.1. Cenário A: Força Bruta em Serviço FTP (vsftpd)
+O ataque foi direcionado à porta 21 (FTP) do Metasploitable 2, utilizando o usuário padrão (msfadmin) e uma lista de senhas fracas.
+
+Comando Utilizado (Medusa):
+Bash
+
+medusa -H [IP_DO_METASPLOITABLE] -u msfadmin -P wordlists/senhas_fracas.txt -M ftp
+Resultado (Evidência):
+Credencial Encontrada: msfadmin:[COLE AQUI A SENHA ENCONTRADA]
+
+Captura de Tela:
+
+Markdown
+
+![Evidência do login e senha descobertos pelo Medusa no serviço FTP](images/ftp_bruteforce_sucesso.png)
+2.2. Cenário B: Password Spraying em Serviço SMB
+O ataque de Password Spraying testou uma única senha comum (msfadmin) contra a lista de usuários, simulando uma política de senhas fracas.
+
+Comando Utilizado (Medusa):
+Bash
+
+medusa -H [IP_DO_METASPLOITABLE] -U wordlists/usuarios_comuns.txt -p msfadmin -M smb
+Resultado (Evidência):
+Credencial Encontrada: [COLE AQUI O USUÁRIO ENCONTRADO]:msfadmin
+
+Captura de Tela:
+
+Markdown
+
+![Evidência da credencial descoberta pelo Password Spraying no SMB](images/smb_passwordspraying_sucesso.png)
+2.3. Cenário C: Automação em Formulário Web (DVWA)
+A simulação de força bruta em um formulário de login web (DVWA - módulo Brute Force) foi realizada utilizando a ferramenta Burp Suite Intruder.
+
+Ferramentas e Configuração:
+Ferramenta: Burp Suite Community (Intruder).
+
+Configuração: O Burp Suite foi configurado como proxy, capturando a requisição POST de login do DVWA. Os payloads de usuário (usuarios_comuns.txt) e senha (senhas_fracas.txt) foram carregados.
+
+Resultado (Evidência):
+Login Encontrado: O ataque foi bem-sucedido ao identificar o par de credenciais admin:password.
+
+Captura de Tela:
+
+Markdown
+
+![Evidência do Burp Intruder mostrando a resposta HTTP alterada (diferente length) indicando o login bem-sucedido no DVWA](images/dvwa_bruteforce_sucesso.png)
+3. Recomendações de Mitigação
+Para prevenir ataques de força bruta e reforçar a segurança dos serviços auditados, as seguintes medidas são recomendadas:
+
+Vulnerabilidade	Medida de Mitigação	Implementação Técnica
+Senhas Fracas	Impor políticas de senhas fortes.	Mínimo de 12 caracteres, uso de caracteres especiais, números e letras.
+Força Bruta	Implementar bloqueio de conta (account lockout).	Bloquear o acesso ao usuário após 3-5 tentativas de login falhas por um período de tempo.
+Protocolos Não Criptografados	Desativar serviços inseguros (FTP, SMB).	Migrar para SFTP (SSH File Transfer Protocol) ou FTPS para criptografia de dados e credenciais em trânsito.
+Exposição Web	Usar CAPTCHA ou rate limiting.	Limitar o número de requisições de login por IP em um curto período para frustrar a automação.
+Usuários Padrão	Alterar ou desativar credenciais padrão.	Mudar o nome de usuário padrão (admin, msfadmin) e as senhas padrão imediatamente após a instalação do serviço.
+
+Exportar para as Planilhas
+4. Conclusão e Reflexões
+Este desafio reforçou a compreensão dos riscos associados a credenciais fracas e à ausência de mecanismos de defesa básicos, como o account lockout e a utilização de protocolos seguros. O Kali Linux e o Medusa (junto com o Burp Suite) se provaram ferramentas essenciais na identificação rápida de pontos de falha que podem ser facilmente explorados em ambientes reais.
