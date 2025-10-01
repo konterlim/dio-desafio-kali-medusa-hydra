@@ -1,94 +1,138 @@
+Tutorial CLI: Ataques de Força Bruta com Kali e Medusa
+Pré-requisitos (Configuração Inicial)
+Assuma que:
 
-Desafio Prático de Segurança Cibernética: Força Bruta com Medusa e Kali Linux
+O Kali Linux e o Metasploitable 2 estão rodando no VirtualBox.
 
-Este projeto simula e documenta cenários de ataque de força bruta utilizando o framework de testes de penetração **Kali Linux** e a ferramenta **Medusa**, contra ambientes vulneráveis controlados (Metasploitable 2 e DVWA).
+A rede está configurada como Host-Only (ou Rede Interna) e as VMs estão se comunicando.
 
-O objetivo é demonstrar a compreensão de vulnerabilidades comuns, a proficiência no uso de ferramentas de auditoria e a capacidade de propor medidas de mitigação.
+O IP do seu Metasploitable 2 (alvo) é [IP_DO_ALVO] (você deve substituí-lo em todos os comandos).
 
----
+1. Verificar Conectividade (No Terminal do Kali)
+Para confirmar se o Kali está "vendo" o Metasploitable:
 
-## 1. Configuração do Ambiente de Testes
-
-O laboratório foi configurado em um ambiente de máquinas virtuais isolado para garantir a segurança e o controle dos testes.
-
-| Componente | Função | Configuração de Rede | Endereço IP (Exemplo) |
-| :--- | :--- | :--- | :--- |
-| **Atacante (VM)** | Kali Linux 2024.x | Rede Interna (Host-Only) | [COLE AQUI O IP DO KALI] |
-| **Alvo (VM)** | Metasploitable 2 | Rede Interna (Host-Only) | **[COLE AQUI O IP DO METASPLOITABLE]** |
-| **Hypervisor** | Oracle VirtualBox | - | - |
-
-### 1.1. Conectividade e Preparação
-
-A comunicação entre as VMs foi validada através do comando `ping` no terminal do Kali Linux.
-
-```bash
-ping [COLE AQUI O IP DO METASPLOITABLE]
-1.2. Wordlists Utilizadas
-As wordlists foram criadas para simular credenciais fracas e comuns, conforme detalhado na pasta /wordlists.
-
-senhas_fracas.txt: Lista de senhas simples (ex: 123456, password, msfadmin).
-
-usuarios_comuns.txt: Lista de usuários padrões e comuns em ambientes de testes (ex: msfadmin, ftpuser, postgres).
-
-2. Cenários de Ataque e Execução
-Os testes foram divididos em três cenários principais para cobrir diferentes protocolos e vetores de ataque.
-
-2.1. Cenário A: Força Bruta em Serviço FTP (vsftpd)
-O ataque foi direcionado à porta 21 (FTP) do Metasploitable 2, utilizando o usuário padrão (msfadmin) e uma lista de senhas fracas.
-
-Comando Utilizado (Medusa):
 Bash
 
-medusa -H [IP_DO_METASPLOITABLE] -u msfadmin -P wordlists/senhas_fracas.txt -M ftp
-Resultado (Evidência):
-Credencial Encontrada: msfadmin:[COLE AQUI A SENHA ENCONTRADA]
+ping -c 4 [IP_DO_ALVO]
+2. Criar Wordlists (No Terminal do Kali)
+Vamos criar as wordlists na sua pasta Home (~):
 
-Captura de Tela:
-
-Markdown
-
-![Evidência do login e senha descobertos pelo Medusa no serviço FTP](images/ftp_bruteforce_sucesso.png)
-2.2. Cenário B: Password Spraying em Serviço SMB
-O ataque de Password Spraying testou uma única senha comum (msfadmin) contra a lista de usuários, simulando uma política de senhas fracas.
-
-Comando Utilizado (Medusa):
 Bash
 
-medusa -H [IP_DO_METASPLOITABLE] -U wordlists/usuarios_comuns.txt -p msfadmin -M smb
-Resultado (Evidência):
-Credencial Encontrada: [COLE AQUI O USUÁRIO ENCONTRADO]:msfadmin
+# 2.1. Criar Wordlist de Senhas Fracas
+nano senhas_fracas.txt
 
-Captura de Tela:
+# (Cole as seguintes senhas dentro do editor nano. Pressione CTRL+X, depois S e Enter para salvar.)
+# CONTEÚDO:
+# msfadmin
+# password
+# 123456
+# toor
+# admin123
+# admin
 
-Markdown
+# 2.2. Criar Wordlist de Usuários Comuns
+nano usuarios_comuns.txt
 
-![Evidência da credencial descoberta pelo Password Spraying no SMB](images/smb_passwordspraying_sucesso.png)
-2.3. Cenário C: Automação em Formulário Web (DVWA)
-A simulação de força bruta em um formulário de login web (DVWA - módulo Brute Force) foi realizada utilizando a ferramenta Burp Suite Intruder.
+# (Cole os seguintes usuários dentro do editor nano. Pressione CTRL+X, depois S e Enter para salvar.)
+# CONTEÚDO:
+# msfadmin
+# user
+# guest
+# ftpuser
+# postgres
+# root
+# administrator
+1. Cenário A: Força Bruta em Serviço FTP (Porta 21)
+Este é um ataque clássico de Força Bruta de Senhas, usando um usuário conhecido.
 
-Ferramentas e Configuração:
-Ferramenta: Burp Suite Community (Intruder).
+Comando de Ataque Medusa
+Execute este comando no terminal do Kali, substituindo [IP_DO_ALVO] e o caminho completo para a wordlist:
 
-Configuração: O Burp Suite foi configurado como proxy, capturando a requisição POST de login do DVWA. Os payloads de usuário (usuarios_comuns.txt) e senha (senhas_fracas.txt) foram carregados.
+Bash
 
-Resultado (Evidência):
-Login Encontrado: O ataque foi bem-sucedido ao identificar o par de credenciais admin:password.
-
-Captura de Tela:
-
-Markdown
-
-![Evidência do Burp Intruder mostrando a resposta HTTP alterada (diferente length) indicando o login bem-sucedido no DVWA](images/dvwa_bruteforce_sucesso.png)
-3. Recomendações de Mitigação
-Para prevenir ataques de força bruta e reforçar a segurança dos serviços auditados, as seguintes medidas são recomendadas:
-
-Vulnerabilidade	Medida de Mitigação	Implementação Técnica
-Senhas Fracas	Impor políticas de senhas fortes.	Mínimo de 12 caracteres, uso de caracteres especiais, números e letras.
-Força Bruta	Implementar bloqueio de conta (account lockout).	Bloquear o acesso ao usuário após 3-5 tentativas de login falhas por um período de tempo.
-Protocolos Não Criptografados	Desativar serviços inseguros (FTP, SMB).	Migrar para SFTP (SSH File Transfer Protocol) ou FTPS para criptografia de dados e credenciais em trânsito.
-Exposição Web	Usar CAPTCHA ou rate limiting.	Limitar o número de requisições de login por IP em um curto período para frustrar a automação.
-Usuários Padrão	Alterar ou desativar credenciais padrão.	Mudar o nome de usuário padrão (admin, msfadmin) e as senhas padrão imediatamente após a instalação do serviço.
+medusa -H [IP_DO_ALVO] -u msfadmin -P /home/kali/senhas_fracas.txt -M ftp -O resultado_ftp.txt
+Parâmetro	Função
+-H	Host: Endereço IP do alvo.
+-u	User: Usuário único a ser testado.
+-P	Password list: Caminho para o arquivo de wordlist de senhas.
+-M	Module: Define o serviço (protocolo) a ser atacado.
+-O	Output: Salva o resultado em um arquivo (para facilitar a documentação).
 
 Exportar para as Planilhas
-4. Conclusão e Reflexões
-Este desafio reforçou a compreensão dos riscos associados a credenciais fracas e à ausência de mecanismos de defesa básicos, como o account lockout e a utilização de protocolos seguros. O Kali Linux e o Medusa (junto com o Burp Suite) se provaram ferramentas essenciais na identificação rápida de pontos de falha que podem ser facilmente explorados em ambientes reais.
+Ação Necessária
+Aguarde até o Medusa terminar.
+
+Capture a tela do terminal mostrando a linha de SUCCESS com as credenciais encontradas.
+
+Salve a Imagem: ftp_bruteforce_sucesso.png
+
+2. Cenário B: Password Spraying em Serviço SMB (Porta 445)
+Este é um ataque de Password Spraying (Pulverização de Senha), usando uma única senha contra múltiplos usuários.
+
+Comando de Ataque Medusa
+Execute este comando no terminal do Kali, substituindo [IP_DO_ALVO] e o caminho completo para a wordlist:
+
+Bash
+
+medusa -H [IP_DO_ALVO] -U /home/kali/usuarios_comuns.txt -p msfadmin -M smb -O resultado_smb.txt
+Parâmetro	Função
+-H	Host: Endereço IP do alvo.
+-U	User list: Caminho para o arquivo de wordlist de usuários.
+-p	Password: Senha única a ser testada.
+-M	Module: Define o serviço (protocolo) a ser atacado.
+
+Exportar para as Planilhas
+Ação Necessária
+Aguarde até o Medusa terminar.
+
+Capture a tela do terminal mostrando a linha de SUCCESS com as credenciais encontradas.
+
+Salve a Imagem: smb_passwordspraying_sucesso.png
+
+3. Cenário C: Automação em Formulário Web (DVWA)
+Para este cenário, o Burp Suite Intruder é a ferramenta padrão e mais eficaz para formulários web. Seguiremos um passo a passo para a interface gráfica, pois o ataque via CLI seria excessivamente complexo.
+
+Ações Sequenciais (GUI)
+#	Ação	Detalhe
+1	Acessar o Alvo	Abra o navegador (Firefox) no Kali e acesse http://[IP_DO_ALVO]/dvwa. Faça o login (admin/password).
+2	Configurar Segurança	Vá em DVWA Security, mude para o nível Low e clique em Submit.
+3	Iniciar Burp Suite	No Kali, abra o Burp Suite Community Edition. Aceite os defaults e espere a interface carregar.
+4	Configurar Proxy	No Burp, vá para a aba Proxy → Options. Confirme que o Listener está em 127.0.0.1:8080.
+5	Configurar Navegador	No Firefox, vá em Configurações → General → Network Settings. Configure o Manual Proxy Configuration: HTTP Proxy como 127.0.0.1, Port como 8080.
+6	Navegar para o Módulo	No navegador, vá para o módulo Brute Force no DVWA.
+7	Capturar Requisição	No Burp, vá para a aba Proxy → Intercept. Clique em "Intercept is on".
+8	Forçar o Erro	No navegador, digite qualquer credencial (ex: teste/teste) e clique em Login. A requisição será capturada no Burp.
+9	Enviar para Intruder	No Burp, clique com o botão direito na requisição capturada → Send to Intruder.
+10	Desligar Interceptação	No Burp, volte para Proxy → Intercept e clique em "Intercept is off".
+
+Exportar para as Planilhas
+Configuração do Ataque Intruder
+Aba Intruder → Positions:
+
+Attack Type: Mude para Cluster Bomb (para testar cada combinação de usuário e senha).
+
+Clique em Clear § (Limpar) para remover marcações automáticas.
+
+Marque os Alvos: Na área de Requisição HTTP, selecione o valor de username e clique em Add §. Repita para o valor de password.
+
+Aba Intruder → Payloads:
+
+Payload Set 1 (Usuários):
+
+Payload Options: Cole o conteúdo do seu arquivo usuarios_comuns.txt.
+
+Payload Set 2 (Senhas):
+
+Payload Options: Cole o conteúdo do seu arquivo senhas_fracas.txt.
+
+Aba Intruder → Start attack:
+
+Clique em Start attack (no canto superior direito).
+
+Analise os Resultados: Ordene a tabela de resultados pela coluna Length (Tamanho). A linha de admin:password terá um length diferente das tentativas falhas, indicando o sucesso.
+
+Ação Necessária
+Capture a tela da janela do Burp Intruder mostrando a linha de credenciais bem-sucedidas destacada pelo tamanho diferente.
+
+Salve a Imagem: dvwa_bruteforce_sucesso.png
